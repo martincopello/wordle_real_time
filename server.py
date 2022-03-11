@@ -18,8 +18,11 @@ def pick_word(words_list):
 def split_word(word):
     return ({letter: index for index, letter in enumerate(word)})
 
+#The timer should be its own thread. Client should be able to send requests even while timer is running
+#The server will just bounce them back by saying they've already solved it or they failed to solve it
+
 def set_timer():
-    t = random.randrange(5, 30, 1)
+    t = random.randrange(15, 16, 1)
     time.sleep(t)
     reset_wordle()
 
@@ -31,12 +34,14 @@ def reset_wordle():
     global number_of_guesses
     global solve_count
     global curr_guess
+    prior_solutions.append(curr_word)
     curr_word = pick_word(list_of_words)
     curr_solution = split_word(curr_word)
     curr_puzzle_solved = False
     wordle_ended = False
     number_of_guesses = 0
     curr_guess = {}
+
 
 curr_word = pick_word(list_of_words)
 curr_solution = split_word(curr_word)
@@ -45,6 +50,7 @@ wordle_ended = False
 number_of_guesses = 0
 solve_count = 0
 curr_guess = {}
+prior_solutions = []
 
 
 class MyTCPHandler(socketserver.BaseRequestHandler):
@@ -68,35 +74,58 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
         # self.request is the TCP socket connected to the client
         self.data = self.request.recv(1024).strip() #receive string
 
+        if number_of_guesses < 0:
+            pass
+
         #If the client requests a new wordle and they have not already solved it, start it up
-        if self.data.decode("utf-8") == "get_puzzle":
+        elif self.data.decode("utf-8") == "get_puzzle":
             message = "Wordle started. Go ahead and send me a guess.".encode("utf-8")
             self.request.sendall(message)
+            print("{} wrote:".format(self.client_address[0]))
+            print(message.decode("utf-8"))
+
         #If the client has already solved the current puzzle, deny them
         elif curr_puzzle_solved == True:
             message = "You've already solved the current Wordle!".encode("utf-8")
             self.request.sendall(message)
+            print("{} wrote:".format(self.client_address[0]))
+            print(message.decode("utf-8"))
+
         #If the client already used up all five of its guesses, deny them
         elif wordle_ended == True:
             message = "You've already failed to solve the current Wordle!".encode("utf-8")
             self.request.sendall(message)
+            print("{} wrote:".format(self.client_address[0]))
+            print(message.decode("utf-8"))
+
         #If the client's guess is invalid, deny them
         elif len(self.data.decode("utf-8")) != 5 or not isinstance(self.data.decode("utf-8"), str):
-            message = "Your guess is not a 5-letter word, therefore invalid.".encode("utf-8")
+            message = str("Your guess is not a 5-letter word, therefore invalid." + self.data.decode("utf-8")).encode("utf-8")
             self.request.sendall(message)
+            print("{} wrote:".format(self.client_address[0]))
+            print(message.decode("utf-8"))
+
         #If they guess the word, send a congratulations message!
         elif self.data.decode("utf-8") == curr_word:
             message = "Congratulations! You've solved the Wordle".encode("utf-8")
             self.request.sendall(message)
+            print("{} wrote:".format(self.client_address[0]))
+            print(message.decode("utf-8"))
             solve_count +=1
-            reset_wordle()
+            curr_puzzle_solved = True
+            set_timer()
+
         #If the client reaches 5 guesses and they have not solved it then reset the wordle
-    elif number_of_guesses == 5:
-            message = "it's OVER!".encode("utf-8")
+        elif number_of_guesses == 5:
+            message = "You've reached five guesses. Wait until the next Wordle starts!".encode("utf-8")
             self.request.sendall(message)
+            print("{} wrote:".format(self.client_address[0]))
+            print(message.decode("utf-8"))
             wordle_ended == True
-            time.sleep(15)
-            reset_wordle()
+            number_of_guesses = -1
+            print(number_of_guesses)
+            set_timer()
+
         #Otherwise increase the number of guesses and provide feedback to the client
         else:
             number_of_guesses += 1
@@ -112,16 +141,16 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
                 else:
                     print(letter)
                     message[letter]= "absent"
-            message = str(str(message) + str(curr_word)).encode("utf-8")
+            message = str(str(message) + " " + str(curr_word)).encode("utf-8")
             self.request.sendall(message)
-        print("{} wrote:".format(self.client_address[0]))
+            print("{} wrote:".format(self.client_address[0]))
+            print(message.decode("utf-8"))
 
 if __name__ == "__main__":
     #HOST, PORT = "localhost", 9999
     HOST, PORT = "127.0.0.1", 9999
 
-
-    # Create the server, binding to localhost on port 9999
+    #Create the server, binding to localhost on port 9999
     with socketserver.TCPServer((HOST, PORT), MyTCPHandler) as server:
     #server = socketserver.TCPServer((HOST, PORT), MyTCPHandler)
         # Activate the server; this will keep running until you
