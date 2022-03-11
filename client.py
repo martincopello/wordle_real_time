@@ -13,6 +13,8 @@ while True:
 
         # Receive data from the server and shut down
         received = str(sock.recv(1024), "utf-8") #here we expect response from server
+
+        #if we receive a word from the server here we can feed it into our model and send back a word guess to the server
         print("Sent:     {}".format(data))
         print("Received: {}".format(received))
         sock.close()
