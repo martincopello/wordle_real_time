@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd
+
 # Most Frequent English Words on the Web from kaggle dataset
 # get the word freq and filter for 5 letter words
 freq = pd.read_csv('word-frequencies.txt',header=None)
@@ -12,7 +15,8 @@ guess = pd.read_csv('wordle-allowed-guesses.txt',header=None)
 guess.columns = ['word']
 print(guess.shape[0])
 
-# inner join - drops words with no freq bc they are weird words 
+# inner join - drops words with no freq bc they are weird words
 df = guess.merge(freq, on='word', how='inner')
+df = df[['word','freq']]
 print(df.shape[0])
-df.to_csv('possible_solutions_freq')
+df.to_csv('possible_solutions_freq.txt',index=False)
