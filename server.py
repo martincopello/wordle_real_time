@@ -16,27 +16,17 @@ list_of_words = create_list_of_words('Project/FiveLetterWords.txt')
 def pick_word(words_list):
     return(random.choice(words_list))
 
-def split_word(word):
-    return ({letter: index for index, letter in enumerate(word)})
-
-#The timer should be its own thread. Client should be able to send requests even while timer is running
-#The server will just bounce them back by saying they've already solved it or they failed to solve it
-
 def set_timer():
     t = random.randrange(3, 4, 1)
     time.sleep(t)
     reset_wordle()
 
 def reset_wordle():
-    #global curr_word
-    #global curr_solution
     global curr_puzzle_solved
     global wordle_ended
     global number_of_guesses
     global solve_count
     global curr_guess
-    #curr_word = pick_word(list_of_words)
-    #curr_solution = split_word(curr_word)
     curr_puzzle_solved = False
     wordle_ended = False
     number_of_guesses = 0
@@ -44,8 +34,6 @@ def reset_wordle():
     ws = Wordle()
 
 
-#curr_word = pick_word(list_of_words)
-#curr_solution = split_word(curr_word)
 curr_puzzle_solved = False
 wordle_ended = False
 number_of_guesses = 0
@@ -84,7 +72,7 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
             message = "Wordle started. Go ahead and send me a guess.".encode("utf-8")
             ws.target_word = pick_word(list_of_words)
 
-            print("Target word is:", ws.target_word, "\n")
+            print("\nTarget word is:", ws.target_word, "\n")
             self.request.sendall(message)
             print("{} (Server) wrote:".format(self.client_address[0]), message.decode("utf-8"))
 
@@ -134,29 +122,12 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
         else:
             number_of_guesses += 1
             curr_guess_feedback = ws.assess_word(self.data.decode("utf-8"))[2]
-            #curr_guess = split_word(self.data.decode("utf-8"))
-            #message = {}
-            # for letter in curr_guess.keys():
-            #     if letter in curr_solution.keys() and curr_guess[letter] == curr_solution[letter]:
-            #         print(letter)
-            #         message[letter]= "correct"
-            #     elif letter in curr_solution.keys():
-            #         print(letter)
-            #         message[letter]= "present"
-            #     else:
-            #         print(letter)
-            #         message[letter]= "absent"
             message = str(curr_guess_feedback).encode("utf-8")
             self.request.sendall(message)
             print("{} (Server) wrote: ".format(self.client_address[0]), message.decode("utf-8"))
 
 if __name__ == "__main__":
-    #HOST, PORT = "localhost", 9999
     HOST, PORT = "127.0.0.1", 9999
 
-    #Create the server, binding to localhost on port 9999
     with socketserver.TCPServer((HOST, PORT), MyTCPHandler) as server:
-    #server = socketserver.TCPServer((HOST, PORT), MyTCPHandler)
-        # Activate the server; this will keep running until you
-        # interrupt the program with Ctrl-C
         server.serve_forever()
