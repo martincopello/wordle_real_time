@@ -79,9 +79,6 @@ while PingServerAgain == True:
         #Otherwise, send another guess word
         #We can program how to work with the feedback we're receiving from the server
         else:
-            #This is currently sending "crony" over and over. this is where we would incorporate our solver and its guesses
-            #message="crony"
-            #print(received, message)
             rules, matched_counts = ws.parse_rule_codes(received,message)
             ws.apply_rules(rules, matched_counts)
             message = ws.get_test_word()[0]
